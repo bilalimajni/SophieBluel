@@ -253,6 +253,138 @@ function createMiniGallery(galleryHTML) {
   minigallery.innerHTML = galleryHTML;
   return minigallery;
 }
+/*ctualise le code HTML de la galerie miniature avec les nouvelles données fournies, en utilisant la fonction generateGalleryHTML(), 
+mais ne modifie pas l'élément existant ni ne retourne de nouveau code HTML.*/
+function refreshMiniGallery(works, deletedWorks, minigallery) {
+  
+  const galleryHTML = generateGalleryHTML(works, deletedWorks);
+  
+ 
+}
+
+/* ferme une fenêtre modale en masquant son conteneur et en réinitialisant la couleur de fond de la page.*/
+function closeModal(modalContainer) {
+  modalContainer.style.display = 'none';
+  document.body.style.backgroundColor = '';
+
+}
+/*actualise l'élément ".gallery" de la galerie principale en mettant à jour son contenu HTML avec le nouveau code HTML généré à partir des données des œuvres récupérées.*/
+function refreshMainGallery() {
+  const galleryElement = document.querySelector('.gallery');
+  if (galleryElement) {
+    fetchWorksData().then((works) => {
+      const galleryHTML = generateGalleryHTML(works, deletedWorks);
+      galleryElement.innerHTML = galleryHTML;
+    });
+  }
+}
+
+/*ajoute des écouteurs d'événements aux icônes de suppression dans la galerie miniature, récupère l'ID correspondant et appelle deleteWork()
+ pour supprimer l'œuvre de la base de données, actualise ensuite la galerie principale et la galerie miniature avec les données mises à jour. 
+ Elle réinitialise enfin les écouteurs d'événements pour les icônes.*/
+
+let modalContainer = null;
+let eventBound = false;
+function bindIconEvents(minigallery) {
+const minifigures = minigallery.querySelectorAll('figure');
+minifigures.forEach(minifigure => {
+const deleteIcon = minifigure.querySelector('.gallery-icon .fa-trash-can');
+deleteIcon.addEventListener('click', async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  const id = minifigure.getAttribute('data-id');
+  const deleteSuccess = await deleteWork(id, minifigure, minigallery, deletedWorks); 
+  if (deleteSuccess) {
+    refreshMainGallery();
+    refreshMiniGallery(await fetchWorksData(), deletedWorks, minigallery); // Ajouter await fetchWorksData() et deletedWorks à l'appel de la fonction refreshMiniGallery
+    bindIconEvents(minigallery); // Réinitialiser les écouteurs d'événements après la mise à jour
+  }
+});
+});
+}
+/*crée une modale affichant une galerie miniature avec des icônes de suppression et d'édition pour chaque œuvre. Elle gère également les clics sur les icônes de suppression pour
+ supprimer les œuvres correspondantes de la base de données et actualiser les galeries principale et miniature*/
+async function displayModal(galleryElement) {
+  const modifierModal = document.querySelector('.blocModfierGallery');
+  const works = await fetchWorksData();
+  const galleryHTML = generateGalleryHTML(works, deletedWorks, true);
+  const minigallery = createMiniGallery(galleryHTML);
+
+  if (!eventBound) {
+    modifierModal.addEventListener('click', async (e) => {
+      e.preventDefault();
+      if (!modalContainer) {
+        modalContainer = createModal(minigallery);
+        document.body.appendChild(modalContainer);
+      } else {
+        modalContainer.style.display = 'block';
+      }
+      document.body.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+    });
+    eventBound = true;
+  }
+
+  minigallery.addEventListener('click', async (e) => {
+    const deleteIcon = e.target.closest('.fa-trash-can');
+    if (deleteIcon) {
+      e.preventDefault();
+      e.stopPropagation();
+      const minifigure = deleteIcon.closest('figure');
+      const id = minifigure.getAttribute('data-id');
+      const deleteSuccess = await deleteWork(id, minifigure, minigallery, deletedWorks);
+      if (deleteSuccess) {
+        refreshMainGallery();
+        refreshMiniGallery(await fetchWorksData(), deletedWorks, minigallery);
+        bindIconEvents(minigallery);
+      }
+    }
+  });
+  
+
+  bindIconEvents(minigallery);
+  
+}
+
+function initializeModalEvents(modalContent, modalContainer) {
+const form = modalContent.querySelector('form');
+form.addEventListener('submit', (e) => handleSubmit(e, form, modalContainer));
+
+const closeButton = modalContent.querySelector('.iconCloasePrmireModale');
+closeButton.addEventListener('click', function (e) {
+  e.preventDefault();
+  if (e.target === modalContainer) {
+    closeModal(modalContainer);
+  }
+  closeModal(modalContainer);
+});
+}
+
+function resetModalContent(modalContent, modalContainer) {
+modalContent.innerHTML = previousModalContent;
+initializeModalEvents(modalContent, modalContainer);
+
+const minifigures = modalContainer.querySelectorAll('.miniGallery figure');
+minifigures.forEach(minifigure => {
+  const deleteIcon = minifigure.querySelector('.gallery-icon .fa-trash-can');
+
+  deleteIcon.addEventListener('click', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const id = minifigure.getAttribute('data-id');
+    const deleteSuccess = await deleteWork(id);
+
+    if (deleteSuccess) {
+      minifigure.remove();
+      const minigallery = modalContainer.querySelector('.miniGallery');
+      refreshMiniGallery(minigallery, await fetchWorksData(), deletedWorks);
+      refreshMainGallery() ;
+      
+    }
+  });
+});
+
+
+}
 
 /*crée un élément de conteneur pour une modale qui contient une galerie photo et un formulaire pour ajouter des photos, ainsi qu'une option pour supprimer la galerie. 
 Elle ajoute également des écouteurs d'événements pour les icônes de suppression et pour fermer la modale.*/
@@ -318,6 +450,8 @@ window.addEventListener('DOMContentLoaded', () => {
 const galleryElement = document.querySelector('.gallery');
 displayModal(galleryElement);
 });
+
+
 
 
 
