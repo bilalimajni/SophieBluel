@@ -91,3 +91,39 @@ if (window.localStorage.getItem("token")) {
   });
 }
 
+
+
+
+
+
+
+//footer
+function createAndAppendFooter() {
+  const pageContainer = document.createElement('div');
+  pageContainer.classList.add('page-container');
+
+  while (document.body.firstChild) {
+    pageContainer.appendChild(document.body.firstChild);
+  }
+
+  document.body.appendChild(pageContainer);
+
+  const footer = document.createElement('footer');
+  footer.classList.add('footerLogin');
+  const nav = document.createElement('nav');
+  const ul = document.createElement('ul');
+  const li = document.createElement('li');
+  const liText = document.createTextNode('Mentions Légales');
+
+  li.appendChild(liText);
+  ul.appendChild(li);
+  nav.appendChild(ul);
+  footer.appendChild(nav);
+
+  document.body.appendChild(footer);
+}
+
+createAndAppendFooter();
+
+
+

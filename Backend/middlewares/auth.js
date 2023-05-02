@@ -1,3 +1,12 @@
+
+
+	
+
+ 
+// car le req.body n'existe pas en envoi post formdata
+
+
+
 const jwt = require('jsonwebtoken')
 
 module.exports = (req, res, next) => {
@@ -18,6 +27,5 @@ module.exports = (req, res, next) => {
 		})
 	}
 }
-
 
 
