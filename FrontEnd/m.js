@@ -464,7 +464,156 @@ displayModal(galleryElement);
 
 
 
+/* ajouter des photos à la galerie en utilisant un formulaire et gérer leur prévisualisation, en plus de permettre la suppression de photos existantes dans la galerie. 
+La fonction handleSubmit() se charge du traitement des données du formulaire, de l'envoi de la requête POST pour ajouter la photo et de la réinitialisation du 
+contenu du formulaire une fois l'opération terminée.*/
 
+let previousModalContent;
+
+async function handleSubmit(e, form, modalContainer) {
+  e.preventDefault();
+  categoryNames.shift();
+  let options = "";
+
+  categoryNames.forEach((category, index) => {
+    options += `<option value="${index + 1}">${category}</option>`;
+  });
+
+  const modalContent = document.querySelector('.modal-content');
+  previousModalContent = modalContent.innerHTML;
+  modalContent.innerHTML = `
+  <div class="modal-content">
+    <div class="arrowCloaseIcon">
+      <div><i class="fa-solid fa-arrow-left"></i></div>
+      <div><i class="fa-solid fa-xmark iconCloasePrmireModale"></i></div>
+    </div>
+
+    <div> <h2>Ajout photo</h2></div>
+
+    <section id="contact" style="width: 100%; display: flex; justify-content: center;">
+      <form>
+      <div class="blocUpladPhoto">
+      <div class="iconUploadImage"><i class="fa-solid fa-image"></i></div>
+      <label for="input-file" class="custom-file-upload">+ Ajouter photo :</label>
+      <input type="file" name="image" id="input-file" class="input-file">
+      <div class="imagePreviewContainer">
+        <img id="preview-image" style="display: none;">
+      </div>
+      <h3>jpg, png : 4mo max</h3>
+    </div>
+        <label for="title">title</label>
+        <input type="text" name="title" value=""><br>
+        <label for="category">Catégorie</label>
+        <select name="category" class="inputCatégorie">
+          <option value=""></option>
+          ${options}
+        </select>
+         <div class="trait marginTrait"></div>
+        <input type="submit" value="Valider" class="envoyer1">
+      </form>
+    </section>
+   
+  </div>`;
+
+  // ...
+
+  const inputImage = modalContent.querySelector("#input-file");
+  const previewImage = modalContent.querySelector("#preview-image");
+
+  function toggleImagePreview(showImage) {
+    const iconUploadImage = document.querySelector(".iconUploadImage");
+    const customFileUpload = document.querySelector(".custom-file-upload");
+    const maxFileSizeText = document.querySelector(".blocUpladPhoto h3");
+
+    if (showImage) {
+      iconUploadImage.classList.add("hidden");
+      customFileUpload.classList.add("hidden");
+      maxFileSizeText.classList.add("hidden");
+      previewImage.style.display = "block";
+    } else {
+      iconUploadImage.classList.remove("hidden");
+      customFileUpload.classList.remove("hidden");
+      maxFileSizeText.classList.remove("hidden");
+      previewImage.style.display = "none";
+    }
+  }
+
+  inputImage.addEventListener("change", function () {
+    const file = this.files[0];
+    if (file) {
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        previewImage.setAttribute("src", e.target.result);
+        toggleImagePreview(true);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      toggleImagePreview(false);
+    }
+  });
+
+  // ...
+
+  const closeButton = modalContent.querySelector('.iconCloasePrmireModale');
+  closeButton.addEventListener('click', function (e) {
+    e.preventDefault();
+    closeModal(modalContainer);
+  });
+
+  const arrowButton = modalContent.querySelector('.fa-arrow-left');
+  arrowButton.addEventListener('click', function (e) {
+   
+    e.preventDefault();
+    e.stopPropagation();
+    resetModalContent(modalContent, modalContainer);
+  });
+
+  const newForm = modalContent.querySelector('form');
+  newForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const titleInput = newForm.querySelector('input[name="title"]');
+    const categoryInput = newForm.querySelector('select[name="category"]');
+    const imageInput = newForm.querySelector('input[name="image"]');
+
+    // Vérifier si tous les champs sont remplis
+    if (titleInput.value === "" || categoryInput.value === "" || imageInput.files.length === 0) {
+      alert("Veuillez remplir tous les champs !");
+      return;
+    }
+
+    // Récupérer l'index de la catégorie sélectionnée
+    const selectedIndex = parseInt(categoryInput.value);
+
+    const formData = new FormData();
+    formData.append('title', titleInput.value);
+    formData.append('category', selectedIndex);
+    formData.append('image', imageInput.files[0]);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5678/api/works', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      const json = await response.json();
+      console.log('json ', json);
+      function resetUploadPhotoContent() {
+        inputImage.value = "";
+        toggleImagePreview(false);
+        previewImage.setAttribute("src", "");
+       
+      }
+       resetUploadPhotoContent();
+    } catch (error) {
+      console.warn(error);
+    }
+  });
+}
 
 
 
