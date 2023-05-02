@@ -615,10 +615,6 @@ async function handleSubmit(e, form, modalContainer) {
   });
 }
 
-
-
-
-
 // Appel de la fonction d'affichage de la modale au chargement du DOM
 
   displayModal();
