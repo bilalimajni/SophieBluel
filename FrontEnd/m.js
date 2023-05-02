@@ -164,6 +164,96 @@ login.addEventListener('click', (e) => {
 
 
 
+//
+// Fonction pour récupérer les données de l'API
+async function fetchWorksData() {
+  const response = await fetch('http://127.0.0.1:5678/api/works');
+  const works = await response.json();
+  return works;
+}
+/*supprime une œuvre d'art de la base de données en envoyant une requête DELETE à l'API, puis met à jour la galerie principale et la mini-galerie en conséquence.*/
+let deletedWorks = localStorage.getItem('deletedWorks') ? Array.from(new Set(JSON.parse(localStorage.getItem('deletedWorks')))) : [];
+
+async function deleteWork(id, workElement, minigallery) {
+  const token = localStorage.getItem('token');
+  const userId = localStorage.getItem('userId');
+
+  const response = await fetch(`http://127.0.0.1:5678/api/works/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'userId': userId,
+      'Cache-Control': 'no-cache'
+    }
+  });
+
+  if (response.status === 200) {
+    if (workElement) {
+      const galleryElement = document.querySelector(`.gallery figure[data-id="${id}"]`);
+      if (galleryElement) {
+        galleryElement.remove();
+      }
+      workElement.remove();
+    }
+    // Ajouter l'ID supprimé à la liste des deletedWorks
+    deletedWorks.push(id);
+    localStorage.setItem('deletedWorks', JSON.stringify(Array.from(new Set(deletedWorks))));
+    refreshMainGallery(); // mettre à jour la galerie principale
+    refreshMiniGallery(await fetchWorksData(), deletedWorks, minigallery); // mettre à jour la mini-galerie
+    return true;
+  }
+  return false;
+}
+
+/* crée un élément de galerie d'œuvres à partir des données fournies, en excluant les œuvres supprimées, puis retourne le code HTML résultant. 
+Elle peut également ajouter des icônes d'édition et de suppression si l'argument "mini" est vrai.*/
+function generateGalleryHTML(works, deletedWorks, mini = false) {
+  const gallery = document.createElement('div');
+
+  for (const work of works) {
+    if (!deletedWorks.includes(work.id)) {
+      const figure = document.createElement('figure');
+      figure.setAttribute('data-id', work.id);
+
+      const img = document.createElement('img');
+      img.src = work.imageUrl;
+      img.alt = work.title;
+      figure.appendChild(img);
+
+      if (mini) {
+        const galleryIcon = document.createElement('div');
+        galleryIcon.classList.add('gallery-icon');
+        figure.appendChild(galleryIcon);
+
+        const iconSupprimer = document.createElement('i');
+        iconSupprimer.classList.add('fa-solid', 'fa-trash-can', 'iconSupprimer');
+        galleryIcon.appendChild(iconSupprimer);
+
+        const iconMove = document.createElement('i'); // Ajouter l'icône de flèches
+        iconMove.classList.add('fa-solid', 'fa-arrows-up-down-left-right', 'iconMove');
+        galleryIcon.appendChild(iconMove);
+
+        const figcaption = document.createElement('figcaption');
+        figcaption.textContent = 'éditer';
+        figure.appendChild(figcaption);
+      } 
+
+      gallery.appendChild(figure);
+    }
+  }
+
+  return gallery.innerHTML;
+}
+
+
+/*crée et retourne  minigallery  élément de galerie miniature en utilisant le code HTML fourni.*/
+function createMiniGallery(galleryHTML) {
+  const minigallery = document.createElement('div');
+  minigallery.classList.add('minigallery');
+  minigallery.innerHTML = galleryHTML;
+  return minigallery;
+}
+
 /*crée un élément de conteneur pour une modale qui contient une galerie photo et un formulaire pour ajouter des photos, ainsi qu'une option pour supprimer la galerie. 
 Elle ajoute également des écouteurs d'événements pour les icônes de suppression et pour fermer la modale.*/
 function createModal(minigallery) {
@@ -228,6 +318,9 @@ window.addEventListener('DOMContentLoaded', () => {
 const galleryElement = document.querySelector('.gallery');
 displayModal(galleryElement);
 });
+
+
+
 
 
 
